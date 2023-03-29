@@ -321,7 +321,7 @@ def depthFirstSearch_optimized(gameState):
 
                 
     print("cannot find solution!")
-    return 
+    return []
 
 def breadthFirstSearch_optimized(gameState):
     """Implement breadthFirstSearch approach"""
@@ -362,6 +362,7 @@ def breadthFirstSearch_optimized(gameState):
 
     
     print("cannot find solution!")
+    return []
 
 
 
