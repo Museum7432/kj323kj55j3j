@@ -104,25 +104,6 @@ def legalActions(posPlayer, posBox):
     return tuple(tuple(x) for x in legalActions) # e.g. ((0, -1, 'l'), (0, 1, 'R'))
 
 
-# new!!
-def get_action(old_playerpos, current_playerpos):
-    """Return 1 action player must take to move from old position to current position"""
-    change = (current_playerpos[0] - old_playerpos[0], current_playerpos[1] - old_playerpos[1])
-
-    if change == (-1, 0):
-        return 'u'
-
-    if change == (1, 0):
-        return 'd'
-    
-    if change == (0, -1):
-        return 'l'
-    
-    if change == (0, 1):
-        return 'r'
-    
-    raise Exception("unknown player's action")
-
 
 def updateState(posPlayer, posBox, action):
     """Return updated game state after an action is taken"""
@@ -197,7 +178,8 @@ def depthFirstSearch(gameState):
 
                 actions.append(node_action + [action[-1]])
 
-    raise Exception("cannot find solution!")
+    print("cannot find solution!")
+    return []
 
 
 
@@ -243,7 +225,8 @@ def breadthFirstSearch(gameState):
                 actions.append(node_action + [action[-1]])
         
     
-    raise Exception("cannot find solution!")
+    print("cannot find solution!")
+    return []
     
 def cost(actions):
     """A cost function"""
@@ -291,49 +274,12 @@ def uniformCostSearch(gameState):
                 actions.push(node_action + [action[-1]],new_cost)
         
     
-    raise Exception("cannot find solution!")
+    print("cannot find solution!")
+    return []
 
 
 
 # after optimized
-
-
-# def depthFirstSearch_optimized(gameState):
-#     """Implement depthFirstSearch approach"""
-    
-#     beginBox = PosOfBoxes(gameState)
-#     beginPlayer = PosOfPlayer(gameState)
-
-#     startState = (beginPlayer, beginBox)
-#     frontier = collections.deque([[startState]])
-#     exploredSet = set()
-#     actions = [[0]] 
-    
-#     while frontier:
-#         node = frontier.pop()
-#         # node ~ [ ( playerpos, ( box0, box1, ...) )]
-#         node_action = actions.pop()
-
-#         # node[-1][-1] ~ ( box0, box1, ...)
-#         if isEndState(node[-1][-1]):
-#             return node_action[1:]
-#             break
-#         # node[-1] ~ ( playerpos, ( box0, box1, ...) )
-#         if node[-1] not in exploredSet:
-#             exploredSet.add(node[-1])
-#             for action in legalActions(node[-1][0], node[-1][1]):
-#                 newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
-#                 if isFailed(newPosBox):
-#                     continue
-
-#                 # node + [(newPosPlayer, newPosBox)] ~ [ ( playerpos, ( box0, box1, ...) ), (nplayerpos, ( nbox0, nbox1, ...) ) ]
-#                 frontier.append([(newPosPlayer, newPosBox)])
-
-#                 actions.append(node_action + [action[-1]])
-
-#     raise Exception("cannot find solution!")
-
-
 
 def depthFirstSearch_optimized(gameState):
     """Implement depthFirstSearch approach"""
@@ -374,7 +320,8 @@ def depthFirstSearch_optimized(gameState):
                 frontier.append(((newPosPlayer, newPosBox), node[-1] + action[-1]))
 
                 
-    raise Exception("cannot find solution!")
+    print("cannot find solution!")
+    return 
 
 def breadthFirstSearch_optimized(gameState):
     """Implement breadthFirstSearch approach"""
@@ -414,7 +361,7 @@ def breadthFirstSearch_optimized(gameState):
                 frontier.append(((newPosPlayer, newPosBox), node[-1] + action[-1]))#push to back
 
     
-    raise Exception("cannot find solution!")
+    print("cannot find solution!")
 
 
 
@@ -444,10 +391,6 @@ def uniformCostSearch_optimized(gameState):
             exploredSet.add(node[0])
             for action in legalActions(node[0][0], node[0][1]):
                 newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
-
-                if isEndState(newPosBox):
-                    # goal state found!
-                    return [ i for i in node[-1]] + [action[-1]]
  
                 if isFailed(newPosBox):
                     continue
@@ -457,8 +400,8 @@ def uniformCostSearch_optimized(gameState):
                 frontier.push(((newPosPlayer, newPosBox), node[-1] + action[-1]),new_cost)#push to back
         
     
-    raise Exception("cannot find solution!")
-
+    print("cannot find solution!")
+    return []
 
 
 """Read command"""
