@@ -467,6 +467,8 @@ def get_move(layout, player_pos, method, level_number = 0):
 
     print('Runtime of %s: %.2f ms.' %(method, duration))
 
+
+    # save results to file
     with open("./results/" + method + ".csv","a") as file:
         file.writelines( str(level_number) +  ", "+ str(duration) + ", " + str(len(result)) + "\n")
 

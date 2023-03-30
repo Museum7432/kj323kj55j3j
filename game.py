@@ -124,9 +124,9 @@ class Game:
 
 
     def auto_move(self):
-        strategy = get_move(self.level.structure[:-1], self.level.position_player, 'dfs', level_number=self.index_level)
+        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'dfs', level_number=self.index_level)
         # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'bfs', level_number=self.index_level)
-        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'ucs', level_number=self.index_level)
+        strategy = get_move(self.level.structure[:-1], self.level.position_player, 'ucs', level_number=self.index_level)
         # with open("assets/sokobanSolver/Solverlevel_" + str(self.index_level) + ".txt", 'w+') as solver_file:
         #     for listitem in strategy:
         #         solver_file.write('%s, ' % listitem)
