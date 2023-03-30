@@ -80,15 +80,20 @@ def isEndState(posBox):
 def isLegalAction(action, posPlayer, posBox):
     """Check if the given action is legal"""
     xPlayer, yPlayer = posPlayer
-    if action[-1].isupper(): # the move was a push
+    if action[-1].isupper():
+        # the move was a push and the 
+        # new position of that box is free
+
         x1, y1 = xPlayer + 2 * action[0], yPlayer + 2 * action[1]
     else:
+        # if the new position of that box is free
         x1, y1 = xPlayer + action[0], yPlayer + action[1]
     return (x1, y1) not in posBox + posWalls
 
 def legalActions(posPlayer, posBox):
     """Return all legal actions for the agent in the current game state"""
     allActions = [[-1,0,'u','U'],[1,0,'d','D'],[0,-1,'l','L'],[0,1,'r','R']]
+    # uppercase if push
     xPlayer, yPlayer = posPlayer
     legalActions = []
     for action in allActions:
@@ -134,12 +139,17 @@ def isFailed(posBox):
             board = [(box[0] - 1, box[1] - 1), (box[0] - 1, box[1]), (box[0] - 1, box[1] + 1), 
                     (box[0], box[1] - 1), (box[0], box[1]), (box[0], box[1] + 1), 
                     (box[0] + 1, box[1] - 1), (box[0] + 1, box[1]), (box[0] + 1, box[1] + 1)]
+            # board is a 3x3 neighborhood of the box
+
             for pattern in allPattern:
                 newBoard = [board[i] for i in pattern]
+                # flip and rotate that neighborhood in all possible direction
+                # and check for failed patterns
                 if newBoard[1] in posWalls and newBoard[5] in posWalls: return True
                 elif newBoard[1] in posBox and newBoard[2] in posWalls and newBoard[5] in posWalls: return True
                 elif newBoard[1] in posBox and newBoard[2] in posWalls and newBoard[5] in posBox: return True
                 elif newBoard[1] in posBox and newBoard[2] in posBox and newBoard[5] in posBox: return True
+                # though this one seems redundant
                 elif newBoard[1] in posBox and newBoard[6] in posBox and newBoard[2] in posWalls and newBoard[3] in posWalls and newBoard[8] in posWalls: return True
     return False
 
@@ -178,7 +188,7 @@ def depthFirstSearch(gameState):
 
                 actions.append(node_action + [action[-1]])
 
-    print("cannot find solution!")
+    print("cannot find the solution!")
     return []
 
 
@@ -210,6 +220,7 @@ def breadthFirstSearch(gameState):
         
         if node[-1] not in exploredSet:
             exploredSet.add(node[-1])
+            
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
 
@@ -225,11 +236,14 @@ def breadthFirstSearch(gameState):
                 actions.append(node_action + [action[-1]])
         
     
-    print("cannot find solution!")
+    print("cannot find the solution!")
     return []
     
 def cost(actions):
     """A cost function"""
+    # basically taxing all actions that doesn't affect
+    # the boxes position which force the agent to 
+    # choose the shortest path that lead to the box
     return len([x for x in actions if x.islower()])
 
 def uniformCostSearch(gameState):
@@ -241,9 +255,8 @@ def uniformCostSearch(gameState):
     frontier = PriorityQueue()
     frontier.push([startState], 0)
     exploredSet = set()
-    actions = PriorityQueue()
-    actions.push([0], 0)
-    temp = []
+
+    
     ### Implement uniform cost search here
 
     while not frontier.isEmpty():
@@ -260,10 +273,6 @@ def uniformCostSearch(gameState):
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
 
-                if isEndState(newPosBox):
-                    # goal state found!
-                    return node_action[1:] + [action[-1]]
- 
                 if isFailed(newPosBox):
                     continue
 
@@ -274,7 +283,7 @@ def uniformCostSearch(gameState):
                 actions.push(node_action + [action[-1]],new_cost)
         
     
-    print("cannot find solution!")
+    print("cannot find the solution!")
     return []
 
 
@@ -290,14 +299,16 @@ def depthFirstSearch_optimized(gameState):
     startState = (beginPlayer, beginBox)
 
     # removing past states as it is not needed by the algorithm 
-    # (i still dont know why it is here since past action are already 
+    # (i still dont know why it is here since past actions are already 
     # recorded in the actions variable)
-    # remove actions variable as action can be stored in the node itselft
+    # remove actions variable as actions can be stored in the node itselft
     # actions will be stored as string instead.
 
     start_node = (startState,"")
 
     frontier = collections.deque([start_node])
+
+    exploredSet = set()
 
     
     while frontier:
@@ -320,7 +331,7 @@ def depthFirstSearch_optimized(gameState):
                 frontier.append(((newPosPlayer, newPosBox), node[-1] + action[-1]))
 
                 
-    print("cannot find solution!")
+    print("cannot find the solution!")
     return []
 
 def breadthFirstSearch_optimized(gameState):
@@ -361,7 +372,7 @@ def breadthFirstSearch_optimized(gameState):
                 frontier.append(((newPosPlayer, newPosBox), node[-1] + action[-1]))#push to back
 
     
-    print("cannot find solution!")
+    print("cannot find the solution!")
     return []
 
 
@@ -372,7 +383,7 @@ def uniformCostSearch_optimized(gameState):
     beginPlayer = PosOfPlayer(gameState)
 
     startState = (beginPlayer, beginBox)
-    start_node = (startState,"")
+    start_node = (startState,"",0) #state, path, cost
 
     frontier = PriorityQueue()
     frontier.push(start_node, 0)
@@ -383,9 +394,9 @@ def uniformCostSearch_optimized(gameState):
     while not frontier.isEmpty():
         node = frontier.pop()
         
-        if isEndState(node[0][-1]):
+        if isEndState(node[0][1]):
             # goal state found!
-            return [ i for i in node[-1]]
+            return [ i for i in node[1]]
         
         
         if node[0] not in exploredSet:
@@ -396,12 +407,12 @@ def uniformCostSearch_optimized(gameState):
                 if isFailed(newPosBox):
                     continue
                     
-                new_cost = cost(node[-1])
+                new_cost = node[2] +  action[-1].islower()
 
-                frontier.push(((newPosPlayer, newPosBox), node[-1] + action[-1]),new_cost)#push to back
+                frontier.push(((newPosPlayer, newPosBox), node[1] + action[-1],new_cost),new_cost)
         
     
-    print("cannot find solution!")
+    print("cannot find the solution!")
     return []
 
 
@@ -443,5 +454,9 @@ def get_move(layout, player_pos, method):
     time_end=time.time()
 
     print('Runtime of %s: %.2f second.' %(method, time_end-time_start))
+
+    with open("./results/" + method + ".txt","a") as file:
+        file.writelines("1, "+ str(time_end-time_start) + ", " + str(len(result)) + "\n")
+
     print(result)
     return result
