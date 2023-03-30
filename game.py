@@ -27,7 +27,7 @@ class Game:
         self.window = window
         self.load_textures()
         self.player = None
-        self.index_level = 2
+        self.index_level = 1
         self.load_level()
         self.play = True
         self.scores = Scores(self)
@@ -124,9 +124,9 @@ class Game:
 
 
     def auto_move(self):
-        strategy = get_move(self.level.structure[:-1], self.level.position_player, 'dfs')
-        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'bfs')
-        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'ucs')
+        strategy = get_move(self.level.structure[:-1], self.level.position_player, 'dfs', level_number=self.index_level)
+        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'bfs', level_number=self.index_level)
+        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'ucs', level_number=self.index_level)
         # with open("assets/sokobanSolver/Solverlevel_" + str(self.index_level) + ".txt", 'w+') as solver_file:
         #     for listitem in strategy:
         #         solver_file.write('%s, ' % listitem)
@@ -135,6 +135,10 @@ class Game:
         #         _thread.start_new_thread( move, ("Thread-1", 2, strategy) )
         #     except:
         #         print ("Error: unable to start thread")
+        if(len(strategy) == 0):
+            self.index_level += 1
+            self.load_level()
+
         for step in strategy:
             if step in ['R','r']:
                 self.move_player(K_RIGHT)

@@ -81,9 +81,8 @@ def isLegalAction(action, posPlayer, posBox):
     """Check if the given action is legal"""
     xPlayer, yPlayer = posPlayer
     if action[-1].isupper():
-        # the move was a push and the 
-        # new position of that box is free
-
+        # if the move was a push and the 
+        # new position of the player is free
         x1, y1 = xPlayer + 2 * action[0], yPlayer + 2 * action[1]
     else:
         # if the new position of that box is free
@@ -105,7 +104,7 @@ def legalActions(posPlayer, posBox):
         if isLegalAction(action, posPlayer, posBox):
             legalActions.append(action)
         else: 
-            continue     
+            continue #if it works don't touch it
     return tuple(tuple(x) for x in legalActions) # e.g. ((0, -1, 'l'), (0, 1, 'R'))
 
 
@@ -198,6 +197,9 @@ def breadthFirstSearch(gameState):
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
 
+    if isEndState(beginBox):
+        return []
+
     startState = (beginPlayer, beginBox) # e.g. ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)))
     frontier = collections.deque([[startState]]) # store states
     actions = collections.deque([[0]]) # store actions
@@ -213,17 +215,15 @@ def breadthFirstSearch(gameState):
 
         node_action = actions.popleft()
 
-        if isEndState(node[-1][-1]):
-            # goal state found!
-            return node_action[1:]
-
-        
+        # check if current state has been reached before
         if node[-1] not in exploredSet:
             exploredSet.add(node[-1])
-            
+
             for action in legalActions(node[-1][0], node[-1][1]):
                 newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
 
+                # check goal state before adding to queue 
+                # since bfs allows early goal test
                 if isEndState(newPosBox):
                     # goal state found!
                     return node_action[1:] + [action[-1]]
@@ -267,6 +267,7 @@ def uniformCostSearch(gameState):
             # goal state found!
             return node_action[1:]
         
+        # check if current state has been reached before
         if node[-1] not in exploredSet:
             exploredSet.add(node[-1])
 
@@ -288,7 +289,7 @@ def uniformCostSearch(gameState):
 
 
 
-# after optimized
+# after optimization
 
 def depthFirstSearch_optimized(gameState):
     """Implement depthFirstSearch approach"""
@@ -302,9 +303,10 @@ def depthFirstSearch_optimized(gameState):
     # (i still dont know why it is here since past actions are already 
     # recorded in the actions variable)
     # remove actions variable as actions can be stored in the node itselft
-    # actions will be stored as string instead.
+    # actions will be stored as string instead of list 
+    # and will be transform back to list later.
 
-    start_node = (startState,"")
+    start_node = (startState,"") # state, path
 
     frontier = collections.deque([start_node])
 
@@ -316,10 +318,12 @@ def depthFirstSearch_optimized(gameState):
         # node ~ (( playerpos, ( box0, box1, ...) ), "actions" )
         
 
-        # node[0] ~ ( box0, box1, ...)
+        # node[0][-1] ~ ( box0, box1, ...)
         if isEndState(node[0][-1]):
+            # transform a string of actions into a list of actions
             return [ i for i in node[-1]]
 
+        # check if current state has been reached before
         if node[0] not in exploredSet:
             exploredSet.add(node[0])
             for action in legalActions(node[0][0], node[0][1]):
@@ -339,11 +343,13 @@ def breadthFirstSearch_optimized(gameState):
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
 
+    if isEndState(beginBox):
+        return []
 
 
     startState = (beginPlayer, beginBox) # e.g. ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)))
 
-    start_node = (startState,"") # e.g. ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)), "UdLr")
+    start_node = (startState,"") # e.g. ( ( (2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)) ), "UdLr")
 
     frontier = collections.deque([start_node]) 
 
@@ -352,16 +358,14 @@ def breadthFirstSearch_optimized(gameState):
     while frontier:
         node = frontier.popleft() #pop front
 
-        if isEndState(node[0][-1]):
-            # goal state found!
-            return [ i for i in node[-1]]
-
-        
+        # check if current state has been reached before
         if node[0] not in exploredSet:
             exploredSet.add(node[0])
             for action in legalActions(node[0][0], node[0][1]):
                 newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
 
+                # check goal state before adding to queue 
+                # since bfs allows early goal test
                 if isEndState(newPosBox):
                     # goal state found!
                     return [ i for i in node[-1]] + [action[-1]]
@@ -382,8 +386,9 @@ def uniformCostSearch_optimized(gameState):
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
 
-    startState = (beginPlayer, beginBox)
-    start_node = (startState,"",0) #state, path, cost
+    startState = (beginPlayer, beginBox) # e.g. ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)))
+    # also store cost in node as cost can be updated every action
+    start_node = (startState,"",0) #state, path, cost e.g. ( ( (2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)) ), "UdLr", 2)
 
     frontier = PriorityQueue()
     frontier.push(start_node, 0)
@@ -396,17 +401,23 @@ def uniformCostSearch_optimized(gameState):
         
         if isEndState(node[0][1]):
             # goal state found!
+            # transform a string of actions into a list of actions
             return [ i for i in node[1]]
         
-        
+        # check if current state has been reached before
         if node[0] not in exploredSet:
+            
+            # mark state as reached
             exploredSet.add(node[0])
+
             for action in legalActions(node[0][0], node[0][1]):
+
                 newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
  
                 if isFailed(newPosBox):
                     continue
-                    
+                
+                # if the current action doesnt change the boxes' position
                 new_cost = node[2] +  action[-1].islower()
 
                 frontier.push(((newPosPlayer, newPosBox), node[1] + action[-1],new_cost),new_cost)
@@ -433,7 +444,7 @@ def readCommand(argv):
     args['method'] = options.agentMethod
     return args
 
-def get_move(layout, player_pos, method):
+def get_move(layout, player_pos, method, level_number = 0):
     time_start = time.time()
     global posWalls, posGoals
     # layout, method = readCommand(sys.argv[1:]).values()
@@ -451,12 +462,16 @@ def get_move(layout, player_pos, method):
     else:
         raise ValueError('Invalid method.')
 
-    time_end=time.time()
 
-    print('Runtime of %s: %.2f second.' %(method, time_end-time_start))
+    duration = (time.time() - time_start) * 1000
 
-    with open("./results/" + method + ".txt","a") as file:
-        file.writelines("1, "+ str(time_end-time_start) + ", " + str(len(result)) + "\n")
+    print('Runtime of %s: %.2f ms.' %(method, duration))
+
+    with open("./results/" + method + ".csv","a") as file:
+        file.writelines( str(level_number) +  ", "+ str(duration) + ", " + str(len(result)) + "\n")
+
+
+    
 
     print(result)
     return result
