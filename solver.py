@@ -4,7 +4,9 @@ import numpy as np
 import heapq
 import time
 import numpy as np
+import random
 global posWalls, posGoals
+
 class PriorityQueue:
     """Define a PriorityQueue data structure that will be used"""
     def  __init__(self):
@@ -164,8 +166,17 @@ def depthFirstSearch(gameState):
     frontier = collections.deque([[startState]])
     exploredSet = set()
     actions = [[0]] 
+
+
+    max_frontier_size = 0
     
     while frontier:
+
+        if len(frontier) > max_frontier_size:
+            print("\b" * len(str(max_frontier_size)),end="")
+            print(len(frontier),end="")
+            max_frontier_size = len(frontier)
+
         node = frontier.pop()
         # node ~ [ ( playerpos, ( box0, box1, ...) ), ... ]
         node_action = actions.pop()
@@ -293,8 +304,10 @@ def uniformCostSearch(gameState):
 
 def depthFirstSearch_optimized(gameState):
     """Implement depthFirstSearch approach"""
+    # presorting the boxes position to reduce number 
+    # of possible states as all boxes are the same
     
-    beginBox = PosOfBoxes(gameState)
+    beginBox = tuple(sorted(PosOfBoxes(gameState)))
     beginPlayer = PosOfPlayer(gameState)
 
     startState = (beginPlayer, beginBox)
@@ -332,15 +345,157 @@ def depthFirstSearch_optimized(gameState):
                 if isFailed(newPosBox):
                     continue
 
-                frontier.append(((newPosPlayer, newPosBox), node[-1] + action[-1]))
+                frontier.append(((newPosPlayer,tuple(sorted(newPosBox))), node[-1] + action[-1]))
 
                 
     print("cannot find the solution!")
     return []
 
+def actions_shift(actions,number):
+    # shuffle the actions list so that loop are harder to occurred
+    # but since RNG is slow, just shifting the actions list is enough
+    return [actions[(i + number)%len(actions)] for i in range(len(actions))]
+
+
+def depthFirstSearch_WL(gameState,depth_limit):
+    
+    beginBox = tuple(sorted(PosOfBoxes(gameState)))
+    beginPlayer = PosOfPlayer(gameState)
+
+    startState = (beginPlayer, beginBox)
+
+    start_node = (startState,"") # state, path
+
+    frontier = collections.deque([start_node])
+
+    exploredSet = dict() # steps
+
+    
+    while frontier:
+        node = frontier.pop()
+
+        # print((node[0][1]))
+        
+        if len(node[1]) > depth_limit:
+            continue
+        
+
+        # node[0][-1] ~ ( box0, box1, ...)
+        if isEndState(node[0][-1]):
+            return [ i for i in node[-1]]
+        
+
+        for action in legalActions(node[0][0], node[0][1]):
+            newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
+
+            newPosBox = tuple(sorted(newPosBox))
+
+            if isFailed(newPosBox):
+                    continue
+            
+            if (newPosPlayer, newPosBox) not in exploredSet or exploredSet[(newPosPlayer, newPosBox)] > len(node[1]) + 1:
+
+                if isEndState(newPosBox):
+                    return [ i for i in node[-1]] + [action[-1]]
+
+                exploredSet[(newPosPlayer, newPosBox)] = len(node[1]) + 1
+
+                frontier.append(((newPosPlayer,newPosBox), node[-1] + action[-1]))
+
+    print("cannot find the solution!")
+    return []
+
+
+def dfs_with_depth_limit (beginBox, beginPlayer, depth_limit):
+    # dfs implementation as a tree search failed 
+
+    startState = (beginPlayer, tuple(sorted(beginBox)))
+
+
+    start_node = (startState, ' ' ,0) #state, action before, action index
+
+    frontier = collections.deque([start_node])
+
+    exploredSet = set()
+
+
+    actions = [i for i in ("*" +  " "*depth_limit)]
+
+    seed =  (int(time.time()*43956673))%283
+
+    while frontier:
+
+        node = frontier.pop()
+
+        if node[2] > depth_limit:
+            continue
+
+        # add node action to actions
+
+        actions[node[2]] = node[1]
+
+        if isEndState(node[0][-1]):
+            # transform a string of actions into a list of actions
+            return [ i for i in actions[1:node[2] + 1]]
+        
+        if node[0] not in exploredSet:
+
+            exploredSet.add(node[0])
+
+            l_actions = actions_shift(legalActions(node[0][0], node[0][1]),seed)
+
+            seed = (seed + 7757)%8233
+
+            for action in l_actions:
+
+                newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
+
+                if isFailed(newPosBox):
+                    continue
+
+                frontier.append(((newPosPlayer, tuple(sorted(newPosBox))),action[-1], node[2] + 1))
+
+    return []
+
+def iterative_deepening_search(gameState):
+
+    beginBox = PosOfBoxes(gameState)
+    beginPlayer = PosOfPlayer(gameState)
+
+    depth = 1
+
+    while True:
+
+        print("depth: ", depth)
+
+        # solution = dfs_with_depth_limit(
+        #     beginBox=beginBox,
+        #     beginPlayer=beginPlayer,
+        #     depth_limit=depth
+        #     )
+
+        solution = depthFirstSearch_WL(gameState, depth)
+
+
+        
+        if len(solution) >= 1:
+            return solution
+
+        # break
+        
+        # depth *= 2
+        depth += 1
+        
+    
+
+    print("cannot find the solution!")
+    return []
+
+
+
 def breadthFirstSearch_optimized(gameState):
     """Implement breadthFirstSearch approach"""
-    beginBox = PosOfBoxes(gameState)
+    beginBox = tuple(sorted(PosOfBoxes(gameState)))
     beginPlayer = PosOfPlayer(gameState)
 
     if isEndState(beginBox):
@@ -373,7 +528,7 @@ def breadthFirstSearch_optimized(gameState):
                 if isFailed(newPosBox):
                     continue
 
-                frontier.append(((newPosPlayer, newPosBox), node[-1] + action[-1]))#push to back
+                frontier.append(((newPosPlayer, tuple(sorted(newPosBox))), node[-1] + action[-1]))#push to back
 
     
     print("cannot find the solution!")
@@ -383,7 +538,7 @@ def breadthFirstSearch_optimized(gameState):
 
 def uniformCostSearch_optimized(gameState):
     """Implement uniformCostSearch approach"""
-    beginBox = PosOfBoxes(gameState)
+    beginBox = tuple(sorted(PosOfBoxes(gameState)))
     beginPlayer = PosOfPlayer(gameState)
 
     startState = (beginPlayer, beginBox) # e.g. ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)))
@@ -420,7 +575,7 @@ def uniformCostSearch_optimized(gameState):
                 # if the current action doesnt change the boxes' position
                 new_cost = node[2] +  action[-1].islower()
 
-                frontier.push(((newPosPlayer, newPosBox), node[1] + action[-1],new_cost),new_cost)
+                frontier.push(((newPosPlayer, tuple(sorted(newPosBox))), node[1] + action[-1],new_cost),new_cost)
         
     
     print("cannot find the solution!")
@@ -455,6 +610,8 @@ def get_move(layout, player_pos, method, level_number = 0):
     if method == 'dfs':
         # result = depthFirstSearch(gameState)
         result = depthFirstSearch_optimized(gameState)
+    elif method == 'ids':
+        result = iterative_deepening_search(gameState) 
     elif method == 'bfs':
         result = breadthFirstSearch_optimized(gameState) 
     elif method == 'ucs':
