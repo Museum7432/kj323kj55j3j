@@ -356,54 +356,19 @@ def actions_shift(actions,number):
     # but since RNG is slow, just shifting the actions list is enough
     return [actions[(i + number)%len(actions)] for i in range(len(actions))]
 
+def pseudoshuffle(actions,seed):
+    source = [i for i in range(len(actions))]
 
-def depthFirstSearch_WL(gameState,depth_limit):
+    re = []
+
+    for _ in range(len(actions)):
+
+        re += [source.pop(seed%len(source))]
+        seed = (seed * 7757)%8233
     
-    beginBox = tuple(sorted(PosOfBoxes(gameState)))
-    beginPlayer = PosOfPlayer(gameState)
+    return [actions[i] for i in list(re)]
 
-    startState = (beginPlayer, beginBox)
 
-    start_node = (startState,"") # state, path
-
-    frontier = collections.deque([start_node])
-
-    exploredSet = dict() # steps
-
-    
-    while frontier:
-        node = frontier.pop()
-
-        # print((node[0][1]))
-        
-        if len(node[1]) > depth_limit:
-            continue
-        
-
-        # node[0][-1] ~ ( box0, box1, ...)
-        if isEndState(node[0][-1]):
-            return [ i for i in node[-1]]
-        
-
-        for action in legalActions(node[0][0], node[0][1]):
-            newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
-
-            newPosBox = tuple(sorted(newPosBox))
-
-            if isFailed(newPosBox):
-                    continue
-            
-            if (newPosPlayer, newPosBox) not in exploredSet or exploredSet[(newPosPlayer, newPosBox)] > len(node[1]) + 1:
-
-                if isEndState(newPosBox):
-                    return [ i for i in node[-1]] + [action[-1]]
-
-                exploredSet[(newPosPlayer, newPosBox)] = len(node[1]) + 1
-
-                frontier.append(((newPosPlayer,newPosBox), node[-1] + action[-1]))
-
-    print("cannot find the solution!")
-    return []
 
 
 def dfs_with_depth_limit (beginBox, beginPlayer, depth_limit):
@@ -416,7 +381,8 @@ def dfs_with_depth_limit (beginBox, beginPlayer, depth_limit):
 
     frontier = collections.deque([start_node])
 
-    exploredSet = set()
+    exploredSet = dict()
+
 
 
     actions = [i for i in ("*" +  " "*depth_limit)]
@@ -427,9 +393,6 @@ def dfs_with_depth_limit (beginBox, beginPlayer, depth_limit):
 
         node = frontier.pop()
 
-        if node[2] > depth_limit:
-            continue
-
         # add node action to actions
 
         actions[node[2]] = node[1]
@@ -438,53 +401,125 @@ def dfs_with_depth_limit (beginBox, beginPlayer, depth_limit):
             # transform a string of actions into a list of actions
             return [ i for i in actions[1:node[2] + 1]]
         
-        if node[0] not in exploredSet:
+        if node[2] >= depth_limit:
+            continue
 
-            exploredSet.add(node[0])
+        l_actions = legalActions(node[0][0], node[0][1])
 
-            l_actions = actions_shift(legalActions(node[0][0], node[0][1]),seed)
+        seed = (seed + 7757)%8233
 
-            seed = (seed + 7757)%8233
+        for action in l_actions:
+            newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
 
-            for action in l_actions:
+            newPosBox = tuple(sorted(newPosBox))
 
-                newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
-
-                if isFailed(newPosBox):
+            if isFailed(newPosBox):
                     continue
 
+            if (newPosPlayer, newPosBox) not in exploredSet or exploredSet[(newPosPlayer, newPosBox)] > node[2] + 1:
+            
+                exploredSet[(newPosPlayer, newPosBox)] = node[2] + 1
                 frontier.append(((newPosPlayer, tuple(sorted(newPosBox))),action[-1], node[2] + 1))
 
+
     return []
+
+
+def dfs_with_depth_limit_not_complete (beginBox, beginPlayer, depth_limit):
+    # dfs implementation as a tree search failed 
+
+    startState = (beginPlayer, tuple(sorted(beginBox)))
+
+
+    start_node = (startState, ' ' ,0) #state, action before, action index
+
+    frontier = collections.deque([start_node])
+
+    exploredSet = set()
+
+    can_continue = False
+
+
+
+    actions = [i for i in ("*" +  " "*depth_limit)]
+
+    seed =  (int(time.time()*43956673))%283
+
+    while frontier:
+
+        node = frontier.pop()
+
+        # add node action to actions
+
+        actions[node[2]] = node[1]
+
+        if isEndState(node[0][-1]):
+            # transform a string of actions into a list of actions
+            return [ i for i in actions[1:node[2] + 1]], can_continue
+        
+        if node[2] >= depth_limit:
+            can_continue = True
+            continue
+
+        # l_actions = legalActions(node[0][0], node[0][1])
+        l_actions = pseudoshuffle(legalActions(node[0][0], node[0][1]),seed)
+
+
+        seed = (seed + 7757)%8233
+
+        for action in l_actions:
+            newPosPlayer, newPosBox = updateState(node[0][0], node[0][1], action)
+
+            newPosBox = tuple(sorted(newPosBox))
+
+            if isFailed(newPosBox):
+                    continue
+
+            if (newPosPlayer, newPosBox) not in exploredSet:
+            
+                exploredSet.add((newPosPlayer, newPosBox))
+                frontier.append(((newPosPlayer, newPosBox),action[-1], node[2] + 1))
+
+
+    return [], can_continue
 
 def iterative_deepening_search(gameState):
 
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
 
-    depth = 1
+    depth = 8
 
     while True:
 
         print("depth: ", depth)
 
-        # solution = dfs_with_depth_limit(
+        # somehow the non complete version works better...
+
+        # solution, can_continue = dfs_with_depth_limit(
         #     beginBox=beginBox,
         #     beginPlayer=beginPlayer,
         #     depth_limit=depth
         #     )
 
-        solution = depthFirstSearch_WL(gameState, depth)
+        solution, can_continue = dfs_with_depth_limit_not_complete(
+            beginBox=beginBox,
+            beginPlayer=beginPlayer,
+            depth_limit=depth
+            )
+        
 
 
         
         if len(solution) >= 1:
             return solution
-
+        
+        if not can_continue:
+            break
         # break
         
-        # depth *= 2
-        depth += 1
+        depth *= 2
+        # depth += 10
         
     
 
